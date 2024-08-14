@@ -1,13 +1,4 @@
 <x-app-layout>
-
-    <div class="container mx-auto mt-5">
-        <div class="flex space-x-4">
-            <a href="{{ url('roles') }}" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">Roles</a>
-            <a href="{{ url('permissions') }}" class="bg-teal-500 text-white px-4 py-2 rounded hover:bg-teal-600">Permissions</a>
-            <a href="{{ url('users') }}" class="bg-yellow-500 text-white px-4 py-2 rounded hover:bg-yellow-600">Users</a>
-        </div>
-    </div>
-
     <div class="container mx-auto mt-2">
         <div class="flex justify-center">
             <div class="w-full max-w-4xl">
@@ -19,12 +10,12 @@
                 @endif
 
                 <div class="bg-white shadow-md rounded-lg mt-3">
-                    <div class="bg-gray-100 px-6 py-4 border-b border-gray-200">
-                        <h4 class="text-lg font-semibold flex justify-between items-center">
+                    <div class="bg-gray-800 px-6 py-4 border-b border-gray-200">
+                        <h4 class="text-white text-lg font-semibold flex justify-between items-center">
                             Permissions
-                           
-                            <a href="{{ url('permissions/create') }}" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">Add Permission</a>
-                        
+                            <a href="{{ url('permissions/create') }}" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">
+                                <i class="fas fa-plus-circle fa-lg"></i> Add Permission
+                            </a>
                         </h4>
                     </div>
                     <div class="p-6">
@@ -42,13 +33,12 @@
                                     <td class="py-2 px-4 border-r">{{ $permission->id }}</td>
                                     <td class="py-2 px-4 border-r">{{ $permission->name }}</td>
                                     <td class="py-2 px-4 flex space-x-2">
-                                        
-                                        <a href="{{ url('permissions/'.$permission->id.'/edit') }}" class="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600">Edit</a>
-                                        
-
-                                       
-                                        <a href="{{ url('permissions/'.$permission->id.'/delete') }}" class="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600">Delete</a>
-                                        
+                                        <a href="{{ url('permissions/'.$permission->id.'/edit') }}" class="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600">
+                                            <i class="fas fa-edit fa-lg"></i> Edit
+                                        </a>
+                                        <a href="{{ url('permissions/'.$permission->id.'/delete') }}" class="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600">
+                                            <i class="fas fa-trash fa-lg"></i> Delete
+                                        </a>
                                     </td>
                                 </tr>
                                 @endforeach
@@ -59,5 +49,4 @@
             </div>
         </div>
     </div>
-
 </x-app-layout>

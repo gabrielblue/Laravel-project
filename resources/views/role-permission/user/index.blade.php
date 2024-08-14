@@ -1,11 +1,4 @@
 <x-app-layout>
-
-    <div class="container mx-auto mt-5">
-        <a href="{{ url('roles') }}" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded mx-1">Roles</a>
-        <a href="{{ url('permissions') }}" class="bg-teal-500 hover:bg-teal-700 text-white font-bold py-2 px-4 rounded mx-1">Permissions</a>
-        <a href="{{ url('users') }}" class="bg-yellow-500 hover:bg-yellow-700 text-white font-bold py-2 px-4 rounded mx-1">Users</a>
-    </div>
-
     <div class="container mx-auto mt-2">
         <div class="grid grid-cols-1">
             <div class="col-span-1">
@@ -17,9 +10,9 @@
                 <div class="bg-white shadow-md rounded-lg overflow-hidden mt-3">
                     <div class="bg-gray-800 text-white px-6 py-4">
                         <h4 class="text-lg font-semibold">Users
-                            
-                            <a href="{{ url('users/create') }}" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded float-right">Add User</a>
-                            
+                            <a href="{{ url('users/create') }}" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded float-right">
+                                <i class="fas fa-user-plus fa-lg"></i> Add User
+                            </a>
                         </h4>
                     </div>
                     <div class="p-6">
@@ -48,13 +41,12 @@
                                         @endif
                                     </td>
                                     <td class="border px-4 py-2">
-                                        
-                                        <a href="{{ url('users/'.$user->id.'/edit') }}" class="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded">Edit</a>
-                                        
-
-                                        
-                                        <a href="{{ url('users/'.$user->id.'/delete') }}" class="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded mx-2">Delete</a>
-                                        
+                                        <a href="{{ url('users/'.$user->id.'/edit') }}" class="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded">
+                                            <i class="fas fa-edit fa-lg"></i> Edit
+                                        </a>
+                                        <a href="{{ url('users/'.$user->id.'/delete') }}" class="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded mx-2">
+                                            <i class="fas fa-trash fa-lg"></i> Delete
+                                        </a>
                                     </td>
                                 </tr>
                                 @endforeach
@@ -66,5 +58,4 @@
             </div>
         </div>
     </div>
-
 </x-app-layout>

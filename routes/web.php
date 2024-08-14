@@ -1,8 +1,16 @@
 <?php
 
-use App\Http\Controllers\ProfileController;
+use App\Models\Job;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\JobController;
+use App\Http\Controllers\UserController;
+use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\ProjectController;
+use App\Http\Controllers\AlumniprofileController;
 
+
+Route::get('activate-account/{token}', [UserController::class, 'activateAccount'])->name('activate-account');
+Route::post('activate-account/{token}', [UserController::class, 'setPassword'])->name('set-password');
 
 Route::group(['middleware' => ['role:super-admin|admin']], function() {
 
@@ -16,13 +24,32 @@ Route::group(['middleware' => ['role:super-admin|admin']], function() {
 
     Route::resource('users', App\Http\Controllers\UserController::class);
     Route::get('users/{userId}/delete', [App\Http\Controllers\UserController::class, 'destroy']);
+   
+
 
 });
+Route::get('jobs/apply/{job}', [JobController::class, 'apply'])->name('jobs.apply');
+Route::post('jobs/apply/{job}', [JobController::class, 'applyStore'])->name('jobs.applyStore');
+Route::resource('jobs', JobController::class);
+Route::get('jobs/{id}', [JobController::class, 'show'])->name('jobs.show');
+Route::get('/applications', [JobController::class, 'applications'])->name('jobs.applications');
+Route::get('applications/{applicationId}/review', [JobController::class, 'review'])->name('application.review');
+    Route::get('applications/{applicationId}/approve', [JobController::class, 'approve'])->name('application.approve');
+    Route::get('applications/{applicationId}/deny', [JobController::class, 'deny'])->name('application.deny');
+Route::get('/view_jobs', function () {
+
+    $jobs = Job::all();
+    return view('jobs.index',  compact('jobs'));
+
+});
+
+Route::resource('profiles', AlumniprofileController::class);
+Route::resource('projects', ProjectController::class);
 
 
 
 Route::get('/', function () {
-    return view('welcome');
+    return view('auth.login');
 });
 
 Route::get('/dashboard', function () {

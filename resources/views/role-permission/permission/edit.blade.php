@@ -1,4 +1,4 @@
-<x-app-layout>
+<!-- <x-app-layout>
 
     <div class="container mx-auto mt-5">
         <div class="flex justify-center">
@@ -40,4 +40,4 @@
         </div>
     </div>
 
-</x-app-layout>
+</x-app-layout> -->
