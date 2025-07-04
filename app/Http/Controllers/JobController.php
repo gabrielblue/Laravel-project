@@ -23,12 +23,23 @@ class JobController extends Controller implements HasMiddleware
             new Middleware('permission:create job', only: ['create', 'store']),
             new Middleware('permission:edit job', only: ['update', 'edit']),
             new Middleware('permission:delete job', only: ['destroy']),
+            new Middleware('permission:view application', only: ['applications']),
+            new Middleware('permission:review application', only: ['review', 'approve', 'deny']),
+            new Middleware('permission:apply job', only: ['apply', 'applyStore']),
         ];
     }
 
     public function index()
     {
-        $jobs = Job::with('skills')->get();
+        $user = Auth::user();
+        
+        // Show all jobs for admin/hr, only published for others
+        if ($user->hasRole(['super-admin', 'admin', 'hr'])) {
+            $jobs = Job::with('skills')->latest()->get();
+        } else {
+            $jobs = Job::with('skills')->latest()->get(); // Add published filter when implemented
+        }
+        
         return view('jobs.index', compact('jobs'));
     }
 
@@ -63,7 +74,10 @@ class JobController extends Controller implements HasMiddleware
         }
 
         $job->save();
-        $job->skills()->sync($request->skills);
+        
+        if ($request->skills) {
+            $job->skills()->sync($request->skills);
+        }
 
         return redirect()->route('jobs.index')->with('success', 'Job created successfully.');
     }
@@ -72,7 +86,11 @@ class JobController extends Controller implements HasMiddleware
     {
         $job->load('skills');
         $job->increment('views');
-        return view('jobs.show', compact('job'));
+        
+        $canApply = Auth::user()->hasRole(['student', 'alumni']) && 
+                   !$job->applications()->where('user_id', Auth::id())->exists();
+        
+        return view('jobs.show', compact('job', 'canApply'));
     }
 
     public function edit(Job $job)
@@ -107,18 +125,29 @@ class JobController extends Controller implements HasMiddleware
         }
 
         $job->save();
-        $job->skills()->sync($request->skills);
+        
+        if ($request->skills) {
+            $job->skills()->sync($request->skills);
+        }
 
         return redirect()->route('jobs.index')->with('success', 'Job updated successfully.');
     }
 
     public function destroy(Job $job)
     {
+        // Check if user has permission to delete this specific job
+        $user = Auth::user();
+        
+        if (!$user->hasRole(['super-admin', 'admin']) && $job->created_by !== $user->id) {
+            abort(403, 'You can only delete your own job postings.');
+        }
+
         if ($job->image) {
             Storage::disk('public')->delete($job->image);
         }
 
         $job->skills()->detach();
+        $job->applications()->delete(); // Delete all applications
         $job->delete();
 
         return redirect()->route('jobs.index')->with('success', 'Job deleted successfully.');
@@ -126,13 +155,27 @@ class JobController extends Controller implements HasMiddleware
 
     public function apply(Job $job)
     {
+        $user = Auth::user();
+        
+        // Check if user already applied
+        $existingApplication = $job->applications()->where('user_id', $user->id)->first();
+        if ($existingApplication) {
+            return redirect()->back()->with('error', 'You have already applied for this job.');
+        }
+        
         $job->load('skills');
         return view('jobs.apply', compact('job'));
     }
 
     public function applyStore(Request $request, Job $job)
     {
-        \Log::info('Job ID:', ['job_id' => $job->id]);
+        $user = Auth::user();
+        
+        // Check if user already applied
+        $existingApplication = $job->applications()->where('user_id', $user->id)->first();
+        if ($existingApplication) {
+            return redirect()->back()->with('error', 'You have already applied for this job.');
+        }
 
         $request->validate([
             'name' => 'required|string|max:255',
@@ -147,43 +190,68 @@ class JobController extends Controller implements HasMiddleware
 
         $application = JobApplication::create([
             'job_id' => $job->id,
-            'user_id' => Auth::user()->id,
+            'user_id' => $user->id,
             'name' => $request->name,
             'email' => $request->email,
             'resume' => $resumePath,
             'cover_letter' => $request->cover_letter,
+            'status' => 'pending',
         ]);
 
-        $application->skills()->sync($request->skills);
+        if ($request->skills) {
+            $application->skills()->sync($request->skills);
+        }
 
         return redirect()->route('jobs.index')->with('success', 'Application submitted successfully!');
     }
 
     public function applications()
     {
-        $applications = JobApplication::with('job')->get();
+        $user = Auth::user();
+        
+        if ($user->hasRole(['super-admin', 'admin', 'hr'])) {
+            // Show all applications
+            $applications = JobApplication::with(['job', 'user'])->latest()->get();
+        } else {
+            // Show only applications for jobs created by this user (for employers)
+            $applications = JobApplication::with(['job', 'user'])
+                ->whereHas('job', function($query) use ($user) {
+                    $query->where('created_by', $user->id);
+                })
+                ->latest()
+                ->get();
+        }
+        
         return view('jobs.applications', compact('applications'));
-    }
-
-    public function apiShow(Job $job)
-    {
-        $job->load('skills');
-        $job->skills->makeHidden('pivot');
-        return response()->json($job);
     }
 
     public function review($applicationId)
     {
         $application = JobApplication::findOrFail($applicationId);
+        
+        // Check permission
+        $user = Auth::user();
+        if (!$user->hasRole(['super-admin', 'admin', 'hr']) && 
+            $application->job->created_by !== $user->id) {
+            abort(403, 'You can only review applications for your own job postings.');
+        }
+        
         $application->status = 'reviewed';
         $application->save();
     
-        return redirect('/applications')->with('status', 'Application reviewed and email sent.');
+        return redirect('/applications')->with('status', 'Application marked as reviewed.');
     }
     
     public function approve($applicationId)
     {
         $application = JobApplication::findOrFail($applicationId);
+        
+        // Check permission
+        $user = Auth::user();
+        if (!$user->hasRole(['super-admin', 'admin', 'hr']) && 
+            $application->job->created_by !== $user->id) {
+            abort(403, 'You can only approve applications for your own job postings.');
+        }
 
         $application->status = 'approved';
         $application->save();
@@ -200,6 +268,13 @@ class JobController extends Controller implements HasMiddleware
     public function deny($applicationId)
     {
         $application = JobApplication::findOrFail($applicationId);
+        
+        // Check permission
+        $user = Auth::user();
+        if (!$user->hasRole(['super-admin', 'admin', 'hr']) && 
+            $application->job->created_by !== $user->id) {
+            abort(403, 'You can only deny applications for your own job postings.');
+        }
 
         $application->status = 'denied';
         $application->save();
@@ -211,5 +286,12 @@ class JobController extends Controller implements HasMiddleware
         }
 
         return redirect('/applications')->with('status', 'Application denied and user notified.');
+    }
+
+    public function apiShow(Job $job)
+    {
+        $job->load('skills');
+        $job->skills->makeHidden('pivot');
+        return response()->json($job);
     }
 }
